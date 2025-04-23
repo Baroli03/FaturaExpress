@@ -1,12 +1,4 @@
-import sqlite3
-from pathlib import Path
 from connections import config
-
-
-def create_table(db_file: Path, sql: str ):
-    with sqlite3.connect(db_file) as connection:
-        cursor = connection.cursor()
-        cursor.execute(sql)
 
 
 sql_client = (f'CREATE TABLE IF NOT EXISTS {config.TABLE_NAME_CLIENT}'
@@ -55,4 +47,4 @@ tables = {
 }
 
 for db, sql in tables.items():
-    create_table(db, sql)
+    config.create_table(db, sql)

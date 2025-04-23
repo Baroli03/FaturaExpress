@@ -1,4 +1,11 @@
 from pathlib import Path
+import sqlite3
+
+def create_table(db_file: Path, sql: str ):
+    with sqlite3.connect(db_file) as connection:
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        connection.commit() 
 
 ROOT_DIR = Path(__file__).parent.parent / 'Data'
 ROOT_DIR.mkdir(exist_ok=True)
@@ -20,3 +27,4 @@ DB_FILE_INVOICE = ROOT_DIR / DBNAME_INVOICE
 TABLE_NAME_INVOICE_ITEMS = 'invoice_items'
 DBNAME_INVOICE_ITEMS = 'invoiceitems.sqlite3'
 DB_FILE_INVOICE_ITEMS = ROOT_DIR / DBNAME_INVOICE_ITEMS
+ 
