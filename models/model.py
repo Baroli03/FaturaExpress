@@ -90,14 +90,18 @@ class Model(ABC):
                 print(f"{table} com id {id} não encontrado.")
 
     @abstractmethod
-    def salvar(self, db_file: Path):
+    def salvar(self):
         pass
     
     @abstractmethod
-    def atualizar(self, db_file: Path, id: int):
+    def atualizar(self, id: int):
         pass
     
     @abstractmethod
     def consultar(self, id: int):
+        pass
+    
+    @abstractmethod
+    def excluir(self, id: int):
         pass
 

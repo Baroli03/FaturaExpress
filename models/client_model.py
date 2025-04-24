@@ -1,7 +1,18 @@
 from connections import config
 from .model import Model
 
-def getUpdate():
+
+
+# sql_client = (f'CREATE TABLE IF NOT EXISTS {config.TABLE_NAME_CLIENT}'
+# '('
+#     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+#     'nome TEXT NOT NULL,'
+#     'email TEXT NOT NULL UNIQUE,'
+#     'telefone TEXT NOT NULL,'
+#     'endereco TEXT NOT NULL UNIQUE'
+# ')')
+
+def getUpdate_Client():
         try:
             id = input("Digite o Id do item que deseja alterar: ")
             id = int(id)
@@ -39,7 +50,7 @@ class Client(Model):
         if dados is None:
             print("Erro ao atualizar dados. Operação cancelada.")
             return 
-        sql = 'UPDATE Client SET nome = ?, email = ?, telefone = ?, endereco = ? WHERE id = ?'
+        sql = f'UPDATE {config.TABLE_NAME_CLIENT} SET nome = ?, email = ?, telefone = ?, endereco = ? WHERE id = ?'
 
         return self._salvar_no_banco(config.DB_FILE_CLIENT,sql, dados)
 
