@@ -38,25 +38,35 @@ class Client(Model):
         self.email = email
         self.telefone = telefone
         self.endereco = endereço
+        
 
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_CLIENT} (nome, email, telefone, endereco) VALUES(?, ?, ?, ?)"
         dados = [self.nome, self.email, self.telefone, self.endereco]
-        return self._salvar_no_banco(config.DB_FILE_CLIENT, sql, dados)
+        return self._salvar_no_banco(config.DB_FILE_CLIENT, sql, dados, config.TABLE_NAME_CLIENT)
     
 
     
     def atualizar(self, dados: list):
         if dados is None:
             print("Erro ao atualizar dados. Operação cancelada.")
-            return 
+            return
         sql = f'UPDATE {config.TABLE_NAME_CLIENT} SET nome = ?, email = ?, telefone = ?, endereco = ? WHERE id = ?'
+        return self._atualizar_banco(config.DB_FILE_CLIENT, sql, [dados])
 
-        return self._salvar_no_banco(config.DB_FILE_CLIENT,sql, dados)
+    def consultar(self):
+        if self.id is None:
+            print("Erro: ID do cliente não está definido. Não é possível consultar.")
+            return None
+        dados_cliente = self._consultar_por_id_banco(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT, self.id)
+        if dados_cliente is None:
+            print(f"Erro: Cliente com id {self.id} não encontrado.")
+            return None
+        self.id, self.nome, self.email, self.telefone, self.endereco = dados_cliente
+        print(f"Cliente encontrado: {self.id}, {self.nome}, {self.email}, {self.telefone}, {self.endereco}")       
+        return dados_cliente
+    
 
-    def consultar(self, id: int):
-        self._consultar_por_id_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT, id)
 
-
-    def excluir(self, id: int):
-        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,id)   
+    def excluir(self):
+        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,self.id)   

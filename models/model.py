@@ -23,23 +23,7 @@ from pathlib import Path
 
 
 class Model(ABC):
-    # Sql será criado via classe filha no caso 'Client' ou 'Product'
-    #Salvar_no_banco Recebe arquivo para abrir o connect (onde está a url do banco)  
-    @staticmethod
-    def _salvar_no_banco(db_file: Path, sql: str, lista_de_dados: list ):
-        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses.""" 
-        try:
-            with sqlite3.connect(db_file) as connection:
-                cursor = connection.cursor()
-                cursor.executemany(sql, lista_de_dados)
-                connection.commit() 
-            
-        except sqlite3.IntegrityError as e:
-            print("Email já existente", e)
-    
-
-    @staticmethod
-    def _excluir_do_banco(db_file: Path,table: str, id: int):
+    def _excluir_do_banco(self, db_file: Path,table: str, id: int):
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
         if table not in tabelas_permitidas:
@@ -64,17 +48,15 @@ class Model(ABC):
                 else:
                     print(f"{table} com id {id} não encontrado.")
     
-    @staticmethod
-    def _atualizar_banco(db_file: Path, sql: str, lista_de_dados: list):
+
+    def _atualizar_banco(self, db_file: Path, sql: str, lista_de_dados: list):
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
         with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
                 cursor.executemany(sql, lista_de_dados)
                 connection.commit() 
 
-    @staticmethod
-    def _consultar_por_id_banco(db_file: Path, table: str, id: int):
-        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
+    def _consultar_por_id_banco(self, db_file: Path, table: str, id: int):
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
         if table not in tabelas_permitidas:
             raise ValueError("Tabela não permitida!")
@@ -82,12 +64,58 @@ class Model(ABC):
             cursor = connection.cursor()
             cursor.execute(f"SELECT * FROM {table} WHERE id = ?", (id,))
             current_table = cursor.fetchone() 
-            # fetchone Retorna o primeiro registro referente ao comando do cursor.execute
-            # fetchall retorna todos os resultados
             if current_table:
                 print(current_table)
+                return current_table 
             else:
                 print(f"{table} com id {id} não encontrado.")
+                return None 
+
+    # Sql será criado via classe filha no caso 'Client' ou 'Product'
+    #Salvar_no_banco Recebe arquivo para abrir o connect (onde está a url do banco)  
+
+    def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str):
+        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
+        try:
+            with sqlite3.connect(db_file) as connection:
+                cursor = connection.cursor()
+
+                # Verifique a quantidade de dados em lista_de_dados
+                print("Dados que serão inseridos:", lista_de_dados)
+
+                # Executando a consulta para inserir os dados
+                if isinstance(lista_de_dados[0], (list, tuple)):
+                    cursor.executemany(sql, lista_de_dados)
+                else:
+                    cursor.execute(sql, lista_de_dados)
+
+                # Obtendo o ID gerado automaticamente para a última inserção
+                self.id = cursor.lastrowid
+                print(f"ID gerado: {self.id}")
+
+                if self.id is None:
+                    raise ValueError("Erro ao salvar o cliente. ID não foi atribuído.")
+
+                # Confirmando a inserção no banco
+                connection.commit()
+                print(f"Cliente salvo com ID: {self.id}")
+                return  self.id
+
+        except sqlite3.IntegrityError as e:
+            print("Erro de integridade (provavelmente email já existente)", e)
+            # Tentar buscar o ID manualmente
+            with sqlite3.connect(db_file) as conn:
+                cur = conn.cursor()
+                cur.execute(f"SELECT id FROM {table} WHERE email = ?", (self.email,))
+                row = cur.fetchone()
+                if row:
+                    self.id = row[0]
+                    print(f"Cliente já existia com ID: {self.id}")
+                else:
+                    print("Erro: registro já existia mas não foi possível encontrar ID.")
+        except Exception as e:
+            print("Erro ao salvar no banco:", e)
+
 
     @abstractmethod
     def salvar(self):

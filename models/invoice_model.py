@@ -62,11 +62,11 @@ def getUpdate_Invoice():
                 print('Valor de Data de emissão ou valor total invalido, Aceito apenas números')
 
         dados.append(id)
-        print(f"Salvando Client_Id = {client_id}, Data de emissão = {data_emissao}, Valor total = {valor_total}, Status = {status}")
+        print(f"Salvando Client_Id = {client_id}, Data de emissão = {data_emissao}, Valor total = {valor_total}, Status = {status} no id {id}")
         return [client_id, data_emissao, valor_total, status]
 
 class Invoice(Model):
-    def __init__(self, id: int, client_id: Client, dataEmissao: int, valorTotal: float, status: str):
+    def __init__(self, client_id: Client, dataEmissao: int, valorTotal: float, status: str, id: int = None):
         status_esperado = ["Paga", "Pendente", "Vencida", "Cancelada"]
         if status not in status_esperado:
             raise ValueError(f'Status inválido: "{status}". Deve ser um dos: {", ".join(status_esperado)}')
@@ -80,7 +80,7 @@ class Invoice(Model):
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_INVOICE} (client_id, dataEmissao, valorTotal, status) VALUES(?, ?, ?, ?)"
         dados = [self.client_id, self.dataEmissao, self.valorTotal, self.status]
-        return self._salvar_no_banco(config.DB_FILE_INVOICE, sql, dados)
+        return self._salvar_no_banco(config.DB_FILE_INVOICE, sql, dados, config.TABLE_NAME_INVOICE)
 
 
     def atualizar(self, dados: list):

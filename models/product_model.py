@@ -40,7 +40,7 @@ def getUpdate_Product():
     return dados
 
 class Product(Model):
-    def __init__(self, id: int, nome: str, precoUnitario: float, unidade: str):
+    def __init__(self, nome: str, precoUnitario: float, unidade: str, id: int = None):
         self.id = id
         self.nome = nome
         self.precoUnitario = precoUnitario
@@ -50,7 +50,7 @@ class Product(Model):
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_PRODUCT} (nome, precoUnitario, unidade) VALUES(?, ?, ?)"
         dados = [self.nome, self.precoUnitario, self.unidade]
-        return self._salvar_no_banco(config.DB_FILE_PRODUCT, sql, dados)
+        return self._salvar_no_banco(config.DB_FILE_PRODUCT, sql, dados, config.TABLE_NAME_PRODUCT)
 
     def atualizar(self, dados: list):
         if dados is None:
