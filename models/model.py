@@ -65,7 +65,6 @@ class Model(ABC):
             cursor.execute(f"SELECT * FROM {table} WHERE id = ?", (id,))
             current_table = cursor.fetchone() 
             if current_table:
-                print(current_table)
                 return current_table 
             else:
                 print(f"{table} com id {id} não encontrado.")
@@ -79,9 +78,6 @@ class Model(ABC):
         try:
             with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
-
-                # Verifique a quantidade de dados em lista_de_dados
-                print("Dados que serão inseridos:", lista_de_dados)
 
                 # Executando a consulta para inserir os dados
                 if isinstance(lista_de_dados[0], (list, tuple)):
@@ -98,11 +94,9 @@ class Model(ABC):
 
                 # Confirmando a inserção no banco
                 connection.commit()
-                print(f"Cliente salvo com ID: {self.id}")
                 return  self.id
 
         except sqlite3.IntegrityError as e:
-            print("Erro de integridade (provavelmente email já existente)", e)
             # Tentar buscar o ID manualmente
             with sqlite3.connect(db_file) as conn:
                 cur = conn.cursor()
@@ -110,7 +104,6 @@ class Model(ABC):
                 row = cur.fetchone()
                 if row:
                     self.id = row[0]
-                    print(f"Cliente já existia com ID: {self.id}")
                 else:
                     print("Erro: registro já existia mas não foi possível encontrar ID.")
         except Exception as e:
