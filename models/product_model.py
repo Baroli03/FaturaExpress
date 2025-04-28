@@ -50,7 +50,7 @@ class Product(Model):
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_PRODUCT} (nome, precoUnitario, unidade) VALUES(?, ?, ?)"
         dados = [self.nome, self.precoUnitario, self.unidade]
-        return self._salvar_no_banco(config.DB_FILE_PRODUCT, sql, dados, config.TABLE_NAME_PRODUCT)
+        return self._salvar_no_banco(config.DB_FILE_PRODUCT, sql, dados, config.TABLE_NAME_PRODUCT, "nome", self.nome)
 
     def atualizar(self, dados: list):
         if dados is None:
@@ -58,11 +58,19 @@ class Product(Model):
             return 
         sql = f'UPDATE {config.TABLE_NAME_PRODUCT} SET nome = ?, precoUnitario = ?, unidade = ? WHERE id = ?'
 
-        return self._salvar_no_banco(config.DB_FILE_PRODUCT,sql, dados)
+        return self._salvar_no_banco(config.DB_FILE_PRODUCT,sql, dados, config.TABLE_NAME_PRODUCT)
 
-    def consultar(self, id: int):
-        self._consultar_por_id_banco(config.DB_FILE_PRODUCT,config.TABLE_NAME_PRODUCT, id)
-
+    def consultar(self):
+        if self.id is None:
+            print("Erro: ID do cliente não está definido. Não é possível consultar.")
+            return None
+        dados_produto = self._consultar_por_id_banco(config.DB_FILE_PRODUCT, config.TABLE_NAME_PRODUCT, self.id)
+        if dados_produto is None:
+            print(f"Erro: Produto com id {self.id} não encontrado.")
+            return None
+        self.id, self.nome, self.precoUnitario, self.unidade = dados_produto
+        print(f"Produto encontrado: {self.id}, {self.nome}, {self.precoUnitario}, {self.unidade}")       
+        return dados_produto
 
     def excluir(self, id: int):
         self._excluir_do_banco(config.DB_FILE_PRODUCT,config.TABLE_NAME_PRODUCT,id)   

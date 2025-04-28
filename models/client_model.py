@@ -43,7 +43,7 @@ class Client(Model):
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_CLIENT} (nome, email, telefone, endereco) VALUES(?, ?, ?, ?)"
         dados = [self.nome, self.email, self.telefone, self.endereco]
-        return self._salvar_no_banco(config.DB_FILE_CLIENT, sql, dados, config.TABLE_NAME_CLIENT)
+        return self._salvar_no_banco(config.DB_FILE_CLIENT, sql, dados, config.TABLE_NAME_CLIENT, "nome", self.nome)
     
 
     

@@ -73,8 +73,11 @@ class Model(ABC):
     # Sql será criado via classe filha no caso 'Client' ou 'Product'
     #Salvar_no_banco Recebe arquivo para abrir o connect (onde está a url do banco)  
 
-    def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str):
-        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
+    def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str, coluna: str, resposta: str ):
+        colunas_permitidas = {"nome", "client_id"}
+        if coluna not in colunas_permitidas:
+            raise ValueError("coluna não permitida!")
+        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses.""" 
         try:
             with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
@@ -87,10 +90,9 @@ class Model(ABC):
 
                 # Obtendo o ID gerado automaticamente para a última inserção
                 self.id = cursor.lastrowid
-                print(f"ID gerado: {self.id}")
 
                 if self.id is None:
-                    raise ValueError("Erro ao salvar o cliente. ID não foi atribuído.")
+                    raise ValueError(f"Erro ao salvar o {table}. ID não foi atribuído.")
 
                 # Confirmando a inserção no banco
                 connection.commit()
@@ -100,7 +102,7 @@ class Model(ABC):
             # Tentar buscar o ID manualmente
             with sqlite3.connect(db_file) as conn:
                 cur = conn.cursor()
-                cur.execute(f"SELECT id FROM {table} WHERE email = ?", (self.email,))
+                cur.execute(f"SELECT id FROM {table} WHERE {coluna} = ?", (resposta,))
                 row = cur.fetchone()
                 if row:
                     self.id = row[0]

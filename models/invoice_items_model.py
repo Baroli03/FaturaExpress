@@ -64,7 +64,7 @@ class InvoiceItems(Model):
     def salvar(self):     
         sql = f"INSERT INTO {config.TABLE_NAME_INVOICE_ITEMS} (invoice_id, product_id, quantidade, subtotal) VALUES(?, ?, ?, ?)"
         dados = [self.invoice_id, self.product_id, self.quantidade, self.subtotal]
-        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados, config.TABLE_NAME_INVOICE_ITEMS)
+        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados, config.TABLE_NAME_INVOICE_ITEMS,"invoice_id", self.invoice_id )
     
     def atualizar(self, dados: list):
         if dados is None:

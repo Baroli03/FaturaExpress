@@ -67,6 +67,7 @@ def getUpdate_Invoice():
 
 class Invoice(Model):
     def __init__(self, client_id: Client, dataEmissao: int, valorTotal: float, status: str, id: int = None):
+        """ Status possiveis valores: "Paga", "Pendente", "Vencida", "Cancelada" """
         status_esperado = ["Paga", "Pendente", "Vencida", "Cancelada"]
         if status not in status_esperado:
             raise ValueError(f'Status inválido: "{status}". Deve ser um dos: {", ".join(status_esperado)}')
@@ -77,10 +78,11 @@ class Invoice(Model):
         self.status = status
     
 
-    def salvar(self):     
+    def salvar(self):  
+        
         sql = f"INSERT INTO {config.TABLE_NAME_INVOICE} (client_id, dataEmissao, valorTotal, status) VALUES(?, ?, ?, ?)"
         dados = [self.client_id, self.dataEmissao, self.valorTotal, self.status]
-        return self._salvar_no_banco(config.DB_FILE_INVOICE, sql, dados, config.TABLE_NAME_INVOICE)
+        return self._salvar_no_banco(config.DB_FILE_INVOICE, sql, dados, config.TABLE_NAME_INVOICE, "client_id", self.client_id )
 
 
     def atualizar(self, dados: list):
@@ -90,9 +92,17 @@ class Invoice(Model):
         sql = f'UPDATE {config.TABLE_NAME_INVOICE} SET client_id = ?, dataEmissao = ?, valorTotal = ?, status = ? WHERE id = ?'
         return self._salvar_no_banco(config.DB_FILE_INVOICE,sql, dados)
     
-    def consultar(self, id: int):
-        self._consultar_por_id_banco(config.DB_FILE_INVOICE,config.TABLE_NAME_INVOICE, id)
-
+    def consultar(self):
+        if self.id is None:
+            print("Erro: ID do invoice não está definido. Não é possível consultar.")
+            return None
+        dados_invoice = self._consultar_por_id_banco(config.DB_FILE_INVOICE, config.TABLE_NAME_INVOICE, self.id)
+        if dados_invoice is None:
+            print(f"Erro: Invoice com id {self.id} não encontrado.")
+            return None
+        self.id, self.client_id, self.dataEmissao, self.valorTotal, self.status = dados_invoice
+        print(f"Invoice encontrado: {self.id}, {self.client_id}, {self.dataEmissao}, {self.valorTotal}, {self.status}")       
+        return dados_invoice
 
     def excluir(self, id: int):
         self._excluir_do_banco(config.DB_FILE_INVOICE,config.TABLE_NAME_INVOICE,id)   
