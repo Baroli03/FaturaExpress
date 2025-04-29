@@ -1,108 +1,79 @@
-from connections import config
+# invoice_model.py
+
+from datetime import datetime
 from .model import Model
 from .client_model import Client
-
-
-
-# sql_invoice = (f'CREATE TABLE IF NOT EXISTS {config.TABLE_NAME_INVOICE}'
-# '('
-#     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-#     'client_id INTEGER NOT NULL,'
-#     'dataEmissao INTEGER NOT NULL,'
-#     'valorTotal REAL NOT NULL,'
-#     'status TEXT CHECK(status IN ("Paga", "Pendente", "Vencida", "Cancelada")) NOT NULL,'
-#     'FOREIGN KEY (client_id) REFERENCES client(id)'
-# ')')
-
-
-# @abstractmethod
-# def salvar(self, db_file: Path):
-#     pass
-
-# @abstractmethod
-# def atualizar(self, db_file: Path, id: int):
-#     pass
-
-# @abstractmethod
-# def consultar(self, id: int):
-#     pass
-
-# @abstractmethod
-# def excluir(self, id: int):
-#     pass
-
-def getUpdate_Invoice():
-        try:
-            id = input("Digite o Id do item que deseja alterar: ")
-            id = int(id)
-        except ValueError as e:
-            print("ERROR DIGITE APENAS NÚMERO INTEIROS", e)
-            return None
-        
-        while True:
-            dados = input("Digite novos valores para client_id, dataEmissao, valorTotal, status: [Não esqueça de separar por virgula]").split(',')
-            dados = [item.strip() for item in dados]
-
-            if len(dados) != 4:
-                print("Error: Você deve inserir 4 dados!!")
-                continue
-        
-            if any(not item for item in dados):
-                print("Erro: Nenhum dado pode ser vazio!")
-                continue
-            
-
-            try:
-                client_id = int(dados[0])    
-                data_emissao = int(dados[1])  
-                valor_total = float(dados[2]) 
-                status = dados[3]            
-                break
-            except(ValueError, IndexError):
-                print('Valor de Data de emissão ou valor total invalido, Aceito apenas números')
-
-        dados.append(id)
-        print(f"Salvando Client_Id = {client_id}, Data de emissão = {data_emissao}, Valor total = {valor_total}, Status = {status} no id {id}")
-        return [client_id, data_emissao, valor_total, status]
+import sqlite3
+from connections import config
 
 class Invoice(Model):
-    def __init__(self, client_id: Client, dataEmissao: int, valorTotal: float, status: str, id: int = None):
-        """ Status possiveis valores: "Paga", "Pendente", "Vencida", "Cancelada" """
+    def __init__(self, client_id: Client, status: str, valorTotal: float = 0.0, id: int = None):
+        """ Status possíveis valores: "Paga", "Pendente", "Vencida", "Cancelada" """
         status_esperado = ["Paga", "Pendente", "Vencida", "Cancelada"]
         if status not in status_esperado:
             raise ValueError(f'Status inválido: "{status}". Deve ser um dos: {", ".join(status_esperado)}')
         self.id = id
         self.client_id = client_id.id
-        self.dataEmissao = dataEmissao
-        self.valorTotal = valorTotal
         self.status = status
-    
+        self.valorTotal = valorTotal
+        self.dataEmissao = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Data e hora atuais
 
     def salvar(self):  
-        
-        sql = f"INSERT INTO {config.TABLE_NAME_INVOICE} (client_id, dataEmissao, valorTotal, status) VALUES(?, ?, ?, ?)"
-        dados = [self.client_id, self.dataEmissao, self.valorTotal, self.status]
-        return self._salvar_no_banco(config.DB_FILE_INVOICE, sql, dados, config.TABLE_NAME_INVOICE, "client_id", self.client_id )
+        # Verificar se já existe uma fatura com o mesmo cliente e data de emissão
+        sql_check = f"SELECT id FROM {config.TABLE_NAME_INVOICE} WHERE client_id = ? AND dataEmissao = ?"
+        dados_check = [self.client_id, self.dataEmissao]
 
+        with sqlite3.connect(config.DB_FILE_INVOICE) as connection:
+            cursor = connection.cursor()
+            cursor.execute(sql_check, dados_check)
+            resultado = cursor.fetchone()
 
-    def atualizar(self, dados: list):
-        if dados is None:
-            print("Erro ao atualizar dados. Operação cancelada.")
-            return 
-        sql = f'UPDATE {config.TABLE_NAME_INVOICE} SET client_id = ?, dataEmissao = ?, valorTotal = ?, status = ? WHERE id = ?'
-        return self._salvar_no_banco(config.DB_FILE_INVOICE,sql, dados)
-    
+            if resultado is None:
+                # A fatura não existe, então cria uma nova
+                sql_insert = f"INSERT INTO {config.TABLE_NAME_INVOICE} (client_id, dataEmissao, valorTotal, status) VALUES(?, ?, ?, ?)"
+                dados_insert = [self.client_id, self.dataEmissao, self.valorTotal, self.status]
+                cursor.execute(sql_insert, dados_insert)
+                self.id = cursor.lastrowid  # Pega o ID da nova fatura
+                connection.commit()
+                print(f"Fatura criada com sucesso com ID {self.id}!")
+            else:
+                # A fatura já existe, atualiza os dados
+                self.id = resultado[0]  # Pega o ID da fatura existente
+                print(f"Fatura já existe com ID {self.id}, atualizando...")
+
+                # Atualiza a fatura com novos valores
+                sql_update = f"UPDATE {config.TABLE_NAME_INVOICE} SET valorTotal = ?, status = ? WHERE id = ?"
+                dados_update = [self.valorTotal, self.status, self.id]
+                cursor.execute(sql_update, dados_update)
+                connection.commit()
+                print(f"Fatura com ID {self.id} atualizada.")
+
     def consultar(self):
         if self.id is None:
-            print("Erro: ID do invoice não está definido. Não é possível consultar.")
+            print("Erro: ID da fatura não está definido. Não é possível consultar.")
             return None
         dados_invoice = self._consultar_por_id_banco(config.DB_FILE_INVOICE, config.TABLE_NAME_INVOICE, self.id)
         if dados_invoice is None:
-            print(f"Erro: Invoice com id {self.id} não encontrado.")
+            print(f"Erro: Fatura com ID {self.id} não encontrada.")
             return None
         self.id, self.client_id, self.dataEmissao, self.valorTotal, self.status = dados_invoice
-        print(f"Invoice encontrado: {self.id}, {self.client_id}, {self.dataEmissao}, {self.valorTotal}, {self.status}")       
+        print(f"Fatura encontrada: {self.id}, {self.client_id}, {self.dataEmissao}, {self.valorTotal}, {self.status}")       
         return dados_invoice
 
+    def atualizar(self, dados: list):
+        if len(dados) != 4:
+            print("Erro: a lista de dados precisa ter 4 elementos.")
+            return
+        sql = f"""
+            UPDATE {config.TABLE_NAME_INVOICE}
+            SET valorTotal = ?, status = ?
+            WHERE id = ?
+        """
+        return self._atualizar_banco(config.DB_FILE_INVOICE, sql, dados)
+
     def excluir(self, id: int):
-        self._excluir_do_banco(config.DB_FILE_INVOICE,config.TABLE_NAME_INVOICE,id)   
+        self._excluir_do_banco(config.DB_FILE_INVOICE, config.TABLE_NAME_INVOICE, id)
+
+    def adiciona_valor_total(self, quantidade, preco):
+        self.valorTotal = quantidade * preco
+        self.atualizar([self.valorTotal, self.status, self.id])  # Atualiza apenas o valorTotal e status

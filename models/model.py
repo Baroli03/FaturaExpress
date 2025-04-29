@@ -50,11 +50,13 @@ class Model(ABC):
     
 
     def _atualizar_banco(self, db_file: Path, sql: str, lista_de_dados: list):
-        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
-        with sqlite3.connect(db_file) as connection:
+        try:
+            with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
-                cursor.executemany(sql, lista_de_dados)
-                connection.commit() 
+                cursor.execute(sql, lista_de_dados)  # Usando execute para um único conjunto de dados
+                connection.commit()
+        except sqlite3.Error as e:
+            print("Erro ao atualizar banco:", e)
 
     def _consultar_por_id_banco(self, db_file: Path, table: str, id: int):
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
@@ -74,7 +76,7 @@ class Model(ABC):
     #Salvar_no_banco Recebe arquivo para abrir o connect (onde está a url do banco)  
 
     def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str, coluna: str, resposta: str ):
-        colunas_permitidas = {"nome", "client_id"}
+        colunas_permitidas = {"nome", "client_id", "invoice_id"}
         if coluna not in colunas_permitidas:
             raise ValueError("coluna não permitida!")
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses.""" 
