@@ -6,6 +6,34 @@ from .client_model import Client
 import sqlite3
 from connections import config
 
+def getUpdate_Invoice():
+    try:
+        id = int(input("Digite o ID da fatura que deseja alterar: "))
+    except ValueError as e:
+        print("ERRO: Digite apenas números inteiros para o ID.", e)
+        return None
+
+    entrada = input("Digite o novo cliente_id, status, valorTotal (separados por vírgula): ")
+    dados = [item.strip() for item in entrada.split(',')]
+
+    if len(dados) != 3:
+        print("Erro: Você deve inserir exatamente 3 dados (cliente_id, status, valorTotal).")
+        return None
+
+    try:
+        cliente_id = int(dados[0])
+        status = dados[1]
+        valor_total = float(dados[2])
+    except ValueError as e:
+        print("Erro: cliente_id deve ser inteiro e valorTotal deve ser um número decimal.", e)
+        return None
+
+    if not status:
+        print("Erro: O status não pode estar vazio.")
+        return None
+
+    return [cliente_id, status, valor_total, id]
+
 class Invoice(Model):
     def __init__(self, client_id: Client, status: str, valorTotal: float = 0.0, id: int = None):
         """ Status possíveis valores: "Paga", "Pendente", "Vencida", "Cancelada" """
@@ -60,15 +88,16 @@ class Invoice(Model):
         print(f"Fatura encontrada: {self.id}, {self.client_id}, {self.dataEmissao}, {self.valorTotal}, {self.status}")       
         return dados_invoice
 
-    def atualizar(self, dados: list):
-        if len(dados) != 4:
-            print("Erro: a lista de dados precisa ter 4 elementos.")
+    def atualizar_valor_total(self, dados: list):
+        if len(dados) != 2:
+            print("Erro: a lista de dados precisa ter 5 elementos.")
             return
         sql = f"""
             UPDATE {config.TABLE_NAME_INVOICE}
-            SET valorTotal = ?, status = ?
+            SET valorTotal = ?
             WHERE id = ?
         """
+
         return self._atualizar_banco(config.DB_FILE_INVOICE, sql, dados)
 
     def excluir(self, id: int):
@@ -76,4 +105,16 @@ class Invoice(Model):
 
     def adiciona_valor_total(self, quantidade, preco):
         self.valorTotal = quantidade * preco
-        self.atualizar([self.valorTotal, self.status, self.id])  # Atualiza apenas o valorTotal e status
+        self.atualizar_valor_total([self.valorTotal, self.id])
+
+    def atualizar(self, dados):
+        sql = f"""
+            UPDATE {config.TABLE_NAME_INVOICE}
+            SET cliente_id = ?, status = ?, valorTotal = ?
+            WHERE id = ?
+        """
+        dados = [self.cliente.id, self.status, self.valorTotal, self.id]
+        self._atualizar_banco(config.DB_NAME, sql, dados)
+
+    def consultar_geral_client(self):
+        self.consultar_geral(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT)

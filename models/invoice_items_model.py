@@ -21,14 +21,13 @@ class InvoiceItems(Model):
         # Calcula o subtotal e atualiza a fatura
         subtotal = self.quantidade * self.valor_produto
         sql = f"INSERT INTO {config.TABLE_NAME_INVOICE_ITEMS} (invoice_id, product_id, quantidade, subtotal) VALUES(?, ?, ?, ?)"
-        dados = [self.invoice_id, self.product_id, self.quantidade, subtotal]
+        dados = [self.invoice_id, self.product_id, self.quantidade, self.valor_produto]
         
         # Adiciona valor total à fatura
         self.invoice.adiciona_valor_total(self.quantidade, self.valor_produto)
 
         # Atualiza a fatura após adicionar o item
         dados_invoice = [self.invoice.client_id, self.invoice.dataEmissao, self.invoice.valorTotal, self.invoice.status, self.invoice.id]
-        self.invoice.atualizar(dados_invoice)
         
         return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados, config.TABLE_NAME_INVOICE_ITEMS, "invoice_id", self.invoice_id)
 

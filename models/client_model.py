@@ -63,10 +63,13 @@ class Client(Model):
             print(f"Erro: Cliente com id {self.id} não encontrado.")
             return None
         self.id, self.nome, self.email, self.telefone, self.endereco = dados_cliente
-        print(f"Cliente encontrado: {self.id}, {self.nome}, {self.email}, {self.telefone}, {self.endereco}")       
+        print(f"Cliente: {self.id}, {self.nome}, {self.email}, {self.telefone}, {self.endereco}")       
         return dados_cliente
     
-
+    @staticmethod
+    def consultar_geral_client():
+        # Chama a função para consultar todos os registros na tabela client
+        return Client._consultar_geral(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT)
 
     def excluir(self):
-        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,self.id)   
+        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,self.id)
