@@ -2,6 +2,10 @@ from models.client_model import Client
 from models.product_model import Product
 from models.invoice_model import Invoice
 from models.invoice_items_model import InvoiceItems
+from models.client_model import get_update_client
+
+
+
 
 def menu_principal():
     while True:
@@ -12,7 +16,6 @@ def menu_principal():
         print("0. Sair")
 
         opcao = input("Escolha uma opção: ")
-
         if opcao == "1":
             menu_clientes()
         elif opcao == "2":
@@ -119,7 +122,9 @@ def ver_clientes():
         print("Nenhum cliente encontrado.")
 
 def atualizar_cliente():
-    print("Atualizando cliente... (exemplo)")
+    dados = get_update_client()
+    cliente_novo = Client(*dados)
+    cliente_novo.atualizar()
 
 def deletar_cliente():
     print("Deletando cliente... (exemplo)")

@@ -6,6 +6,7 @@ from .client_model import Client
 import sqlite3
 from connections import config
 
+
 def getUpdate_Invoice():
     try:
         id = int(input("Digite o ID da fatura que deseja alterar: "))
@@ -115,6 +116,3 @@ class Invoice(Model):
         """
         dados = [self.cliente.id, self.status, self.valorTotal, self.id]
         self._atualizar_banco(config.DB_NAME, sql, dados)
-
-    def consultar_geral_client(self):
-        self.consultar_geral(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT)
