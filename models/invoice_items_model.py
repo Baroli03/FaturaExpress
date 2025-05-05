@@ -1,81 +1,54 @@
+# invoice_items_model.py
+
 from connections import config
 from .model import Model
 from .invoice_model import Invoice
 from .product_model import Product
-
-
-# sql_invoice_items = (f'CREATE TABLE IF NOT EXISTS {config.TABLE_NAME_INVOICE_ITEMS}'
-# '('
-#     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-#     'invoice_id INTEGER NOT NULL,'
-#     'product_id INTEGER NOT NULL,'
-#     'quantidade INTEGER NOT NULL,'
-#     'subtotal REAL NOT NULL,'
-#     'FOREIGN KEY (invoice_id) REFERENCES invoice(id),'
-#     'FOREIGN KEY (product_id) REFERENCES product(id)'
-# ')')
-
-def getUpdate_InvoiceItems():
-        try:
-            id = input("Digite o Id do item que deseja alterar: ")
-            id = int(id)
-        except ValueError as e:
-            print("ERROR DIGITE APENAS NÚMERO INTEIROS", e)
-            return None
-        
-        while True:
-            dados = input("Digite novos valores para invoice_id (INTEGER), product_id (INTEGER), quantidade (INTEGER), subtotal (REAL): [Não esqueça de separar por virgula]").split(',')
-            dados = [item.strip() for item in dados]
-
-            if len(dados) != 4:
-                print("Error: Você deve inserir 4 dados!!")
-                continue
-        
-            if any(not item for item in dados):
-                print("Erro: Nenhum dado pode ser vazio!")
-                continue
-            
-
-            try:
-                invoice_id = int(dados[0])    
-                product_id = int(dados[1])  
-                quantidade = int(dados[2]) 
-                subtotal = float(dados[3])            
-                break
-            except(ValueError, IndexError):
-                print('Valores Incorretos, tente novamente')
-
-        dados.append(id)
-        print(f"Salvando invoice_id = {invoice_id}, product_id = {product_id}, quantidade = {quantidade}, subtotal = {subtotal} no id {id}")
-        return [invoice_id, product_id, quantidade, subtotal]
-
-
-
+import sqlite3
 
 class InvoiceItems(Model):
-    def __init__(self, invoice_id: Invoice, product_id: Product, quantidade: int, subtotal: float, id: int = None):
-        self.invoice_id = invoice_id.id
-        self.product_id = product_id.id
+    """Resposta Esperada: Id da Fatura de itens / Id da Fatura pega / id do Produto / Quantidade de produtos pegos / Valor do produto
+    """
+    def __init__(self, invoice: Invoice, produto: Product, quantidade: int, id: int = None):
+        self.invoice_id = invoice.id
+        self.invoice = invoice
+        self.product_id = produto.id
         self.quantidade = quantidade
-        self.subtotal = subtotal
+        self.valor_produto = produto.precoUnitario
         self.id = id
-    
 
     def salvar(self):     
+        # Calcula o subtotal e atualiza a fatura
+        subtotal = self.quantidade * self.valor_produto
         sql = f"INSERT INTO {config.TABLE_NAME_INVOICE_ITEMS} (invoice_id, product_id, quantidade, subtotal) VALUES(?, ?, ?, ?)"
-        dados = [self.invoice_id, self.product_id, self.quantidade, self.subtotal]
-        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados, config.TABLE_NAME_INVOICE_ITEMS,"invoice_id", self.invoice_id )
-    
+        dados = [self.invoice_id, self.product_id, self.quantidade, self.valor_produto]
+        
+        # Adiciona valor total à fatura
+        self.invoice.adiciona_valor_total(self.quantidade, self.valor_produto)
+
+        # Atualiza a fatura após adicionar o item
+        dados_invoice = [self.invoice.client_id, self.invoice.dataEmissao, self.invoice.valorTotal, self.invoice.status, self.invoice.id]
+        
+        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados, config.TABLE_NAME_INVOICE_ITEMS, "invoice_id", self.invoice_id)
+
     def atualizar(self, dados: list):
         if dados is None:
             print("Erro ao atualizar dados. Operação cancelada.")
             return 
         sql = f'UPDATE {config.TABLE_NAME_INVOICE_ITEMS} SET invoice_id = ?, product_id = ?, quantidade = ?, subtotal = ? WHERE id = ?'
-        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS,sql, dados)
-    
-    def consultar(self, id: int):
-        self._consultar_por_id_banco(config.DB_FILE_INVOICE_ITEMS,config.TABLE_NAME_INVOICE_ITEMS, id)
+        return self._salvar_no_banco(config.DB_FILE_INVOICE_ITEMS, sql, dados)
 
+    def consultar(self):
+        if self.id is None:
+            print("Erro: ID do item não está definido. Não é possível consultar.")
+            return None
+        dados_invoice_item = self._consultar_por_id_banco(config.DB_FILE_INVOICE_ITEMS, config.TABLE_NAME_INVOICE_ITEMS, self.id)
+        if dados_invoice_item is None:
+            print(f"Erro: Item de fatura com ID {self.id} não encontrado.")
+            return None
+        self.id, self.invoice_id, self.product_id, self.quantidade, self.valor_produto = dados_invoice_item
+        print(f"Item da fatura encontrado: {self.id}, {self.invoice_id}, {self.product_id}, {self.quantidade}, {self.valor_produto}")       
+        return dados_invoice_item
 
     def excluir(self, id: int):
-        self._excluir_do_banco(config.DB_FILE_INVOICE_ITEMS,config.TABLE_NAME_INVOICE_ITEMS,id)   
+        self._excluir_do_banco(config.DB_FILE_INVOICE_ITEMS, config.TABLE_NAME_INVOICE_ITEMS, id)   

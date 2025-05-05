@@ -23,7 +23,15 @@ from pathlib import Path
 
 
 class Model(ABC):
-    def _excluir_do_banco(self, db_file: Path,table: str, id: int):
+    @staticmethod
+    def colunas_permitidas(coluna: str, permitidas: list):
+        if coluna not in permitidas:
+            raise ValueError("coluna não permitida!")
+        return coluna
+
+
+    @staticmethod
+    def _excluir_do_banco(db_file: Path,table: str, id: int):
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
         if table not in tabelas_permitidas:
@@ -50,11 +58,13 @@ class Model(ABC):
     
 
     def _atualizar_banco(self, db_file: Path, sql: str, lista_de_dados: list):
-        """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
-        with sqlite3.connect(db_file) as connection:
+        try:
+            with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
-                cursor.executemany(sql, lista_de_dados)
-                connection.commit() 
+                cursor.execute(sql, lista_de_dados)  # Usando execute para um único conjunto de dados
+                connection.commit()
+        except sqlite3.Error as e:
+            print("Erro ao atualizar banco:", e)
 
     def _consultar_por_id_banco(self, db_file: Path, table: str, id: int):
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
@@ -69,15 +79,31 @@ class Model(ABC):
             else:
                 print(f"{table} com id {id} não encontrado.")
                 return None 
+            
+    # Função para consultar geral e retornar os dados
+    def _consultar_geral(db_file: Path, table: str):
+        try:
+            with sqlite3.connect(db_file) as connection:
+                cursor = connection.cursor()
+                sql = f"SELECT * FROM {table}"
+                cursor.execute(sql)
+                registros = cursor.fetchall()
+
+                if registros:
+                    return registros  # Retorna os registros encontrados
+                else:
+                    print(f"Nenhum registro encontrado na tabela {table}.")
+                    return []  # Retorna uma lista vazia, caso não haja registros
+        except sqlite3.Error as e:
+            print(f"Erro ao consultar a tabela {table}: {e}")
+            return []  
 
     # Sql será criado via classe filha no caso 'Client' ou 'Product'
     #Salvar_no_banco Recebe arquivo para abrir o connect (onde está a url do banco)  
 
-    def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str, coluna: str, resposta: str ):
-        colunas_permitidas = {"nome", "client_id"}
-        if coluna not in colunas_permitidas:
-            raise ValueError("coluna não permitida!")
+    def _salvar_no_banco(self, db_file: Path, sql: str, lista_de_dados: list, table: str, coluna_permitida: str, resposta: str ):
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses.""" 
+        coluna_permitida_ok = Model.colunas_permitidas(coluna_permitida, ["nome", "invoice_id"])
         try:
             with sqlite3.connect(db_file) as connection:
                 cursor = connection.cursor()
@@ -102,7 +128,7 @@ class Model(ABC):
             # Tentar buscar o ID manualmente
             with sqlite3.connect(db_file) as conn:
                 cur = conn.cursor()
-                cur.execute(f"SELECT id FROM {table} WHERE {coluna} = ?", (resposta,))
+                cur.execute(f"SELECT id FROM {table} WHERE {coluna_permitida_ok} = ?", (resposta,))
                 row = cur.fetchone()
                 if row:
                     self.id = row[0]

@@ -1,35 +1,40 @@
 from connections import config
 from .model import Model
 
+def solicitar_id():
+    try:
+        id = int(input("Digite o Id do item que deseja alterar: "))
+        return id
+    except ValueError:
+        print("Erro: Digite apenas números inteiros.")
+        return None
 
+def solicitar_dados():
+    entrada = input("Digite o novo nome, email, telefone, endereco (separados por vírgula): ")
+    dados = [item.strip() for item in entrada.split(',')]
+    
+    if len(dados) != 4:
+        print("Erro: Você deve inserir exatamente 4 dados.")
+        return None
+    
+    if any(not item for item in dados):
+        print("Erro: Nenhum campo pode estar vazio.")
+        return None
 
-# sql_client = (f'CREATE TABLE IF NOT EXISTS {config.TABLE_NAME_CLIENT}'
-# '('
-#     'id INTEGER PRIMARY KEY AUTOINCREMENT,'
-#     'nome TEXT NOT NULL,'
-#     'email TEXT NOT NULL UNIQUE,'
-#     'telefone TEXT NOT NULL,'
-#     'endereco TEXT NOT NULL UNIQUE'
-# ')')
+    return dados
 
-def getUpdate_Client():
-        try:
-            id = input("Digite o Id do item que deseja alterar: ")
-            id = int(id)
-        except ValueError as e:
-            print("ERROR DIGITE APENAS NÚMERO INTEIROS", e)
-            return None
-        dados = str(input("Digite o novo nome, email, telefone, endereco: [Não esqueça de separar por virgula]")).split(',')
-        dados = [item.strip() for item in dados]
-        if len(dados) != 4:
-            print("Error: Você deve inserir 4 dados!!")
-            return None
-        
-        if any(not item for item in dados):
-            print("Erro: Nenhum dado pode ser vazio!")
-            return None
-        dados.append(id)
-        return dados
+def get_update_client():
+    id = solicitar_id()
+    if id is None:
+        return None
+
+    dados = solicitar_dados()
+    if dados is None:
+        return None
+
+    dados.append(id)
+    return dados
+
 
 class Client(Model):
     def __init__(self, nome : str, email : str, telefone : str, endereço: str, id : int = None):
@@ -46,13 +51,14 @@ class Client(Model):
         return self._salvar_no_banco(config.DB_FILE_CLIENT, sql, dados, config.TABLE_NAME_CLIENT, "nome", self.nome)
     
 
-    
-    def atualizar(self, dados: list):
-        if dados is None:
-            print("Erro ao atualizar dados. Operação cancelada.")
-            return
+
+    def atualizar(self):
+        dados = [self.nome, self.email, self.telefone,self.endereco, self.id]
+        if self.id is None:
+            print("Erro: ID do cliente não está definido. Não é possível consultar.")
+            return None
         sql = f'UPDATE {config.TABLE_NAME_CLIENT} SET nome = ?, email = ?, telefone = ?, endereco = ? WHERE id = ?'
-        return self._atualizar_banco(config.DB_FILE_CLIENT, sql, [dados])
+        return self._atualizar_banco(config.DB_FILE_CLIENT, sql, dados)
 
     def consultar(self):
         if self.id is None:
@@ -63,10 +69,14 @@ class Client(Model):
             print(f"Erro: Cliente com id {self.id} não encontrado.")
             return None
         self.id, self.nome, self.email, self.telefone, self.endereco = dados_cliente
-        print(f"Cliente encontrado: {self.id}, {self.nome}, {self.email}, {self.telefone}, {self.endereco}")       
+        print(f"Cliente: {self.id}, {self.nome}, {self.email}, {self.telefone}, {self.endereco}")       
         return dados_cliente
     
+    @staticmethod
+    def consultar_geral_client():
+        # Chama a função para consultar todos os registros na tabela client
+        return Client._consultar_geral(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT)
 
-
-    def excluir(self):
-        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,self.id)   
+    @staticmethod
+    def excluir(id):
+        Client._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,id)
