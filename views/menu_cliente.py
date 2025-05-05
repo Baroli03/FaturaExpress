@@ -54,4 +54,11 @@ def atualizar_cliente():
     cliente_novo.atualizar()
 
 def deletar_cliente():
-    print("Deletando cliente... (exemplo)")
+    while True:
+        try:
+            resposta = input("Digite o id do cliente que deseja deletar: ") 
+            resposta = int(resposta)
+            Client.excluir(resposta)
+            break   
+        except (ValueError, IndexError):
+            print("ERROR, TENTE NOVAMENTE") 

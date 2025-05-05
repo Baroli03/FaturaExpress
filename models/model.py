@@ -30,7 +30,8 @@ class Model(ABC):
         return coluna
 
 
-    def _excluir_do_banco(self, db_file: Path,table: str, id: int):
+    @staticmethod
+    def _excluir_do_banco(db_file: Path,table: str, id: int):
         """Método interno. Não utilize diretamente, use métodos específicos nas subclasses."""
         tabelas_permitidas = {"client", "invoice", "invoice_items", "product"}
         if table not in tabelas_permitidas:

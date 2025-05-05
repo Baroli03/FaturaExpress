@@ -77,5 +77,6 @@ class Client(Model):
         # Chama a função para consultar todos os registros na tabela client
         return Client._consultar_geral(config.DB_FILE_CLIENT, config.TABLE_NAME_CLIENT)
 
-    def excluir(self):
-        self._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,self.id)
+    @staticmethod
+    def excluir(id):
+        Client._excluir_do_banco(config.DB_FILE_CLIENT,config.TABLE_NAME_CLIENT,id)
